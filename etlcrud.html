@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="text/javascript" src="https://canvasjs.com/assets/script/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <title>etlcrud.html</title>
+</head>
+<body>
+    
+    <!-- 1. 영화 등록 ---------------------------------------------------------------------------------------------------------- -->
+    <h3>1. 영화 등록</h3>
+    ID : <input type="text" id="newId"> <br>
+    제목 : <input type="text" id="newTitle"> <br>
+    개봉일 : <input type="text" id="newRelease_date"> <br>
+    상영시간 : <input type="text" id="newRuntime"> <br>
+    <button id="insertBtn" onclick="insert()">등록</button>
+    <!-- 온클릭시 데이터 사라지는 기능 구현 요망 -->
+    <!-- 중복된 영화 에러 뜨는 기능 구현 요망 -->
+    <br>
+    
+    <h4>- 등록 결과 </h4>
+    ID : <input type="text" id="id"> <br>
+    제목 : <input type="text" id="title"> <br>
+    개봉일 : <input type="text" id="release_date"> <br>
+    상영시간 : <input type="text" id="runtime"> <br>
+
+    <br><hr color="red">
+
+    <!-- 2. 전체 영화 조회 ---------------------------------------------------------------------------------------------------------- -->
+    <h3>2. 전체 영화 조회</h3>
+    <form>  
+        <button type="button" onclick="selectall()">조회</button>
+        <button type="button" onclick="tableHidden()">숨기기</button>
+        
+        <!-- 테이블 무한 생성 방지를 위한 부모 테이블 생성  -->
+        <div id="petlTable">
+            <div id="etlTable"></div>
+        </div>
+    </form>
+
+    <br><br><hr color="red">
+
+    <!-- 3. 영화 정보 조회 ---------------------------------------------------------------------------------------------------------- -->
+    <h3>3. 영화 정보 조회</h3>
+    ID : <input type="text" id="sid"> <br>
+    <button onclick="select()">조회</button> <br>
+
+    <h4>- 조회 결과 </h4>
+    ID : <input type="text" id="selectId"> <br>
+    제목 : <input type="text" id="selectTitle"> <br>
+    개봉일 : <input type="text" id="selectReleasedate"> <br>
+    상영시간 : <input type="text" id="selectRuntime"> <br>
+
+    <br><hr color="red">
+
+    <!-- 4. 영화 업데이트 ---------------------------------------------------------------------------------------------------------- -->
+    <h3>4. 영화 정보 수정</h3>
+    ID : <input type="text" id="uid"> <br>
+    제목 : <input type="text" id="utitle"> <br>
+    <button id="updateBtn" onclick="update()">수정</button>
+
+    <h4>- 수정 결과 </h4>
+    ID : <input type="text" id="updateId"> <br>
+    제목 : <input type="text" id="updateTitle"> <br>
+    개봉일 : <input type="text" id="updateReleasedate"> <br>
+    상영시간 : <input type="text" id="updateRuntime"> <br>
+    
+    <br><br><hr color="red">
+    
+    <!-- 5. 영화 삭제 ---------------------------------------------------------------------------------------------------------- -->
+    <h3>5. 영화 삭제</h3>
+    ID : <input type="text" id="did"> <br>
+    <button id="delBtn" onclick="deletl()">삭제</button>
+    <div id="del2"></div>
+
+    <script>
+        // 1. 영화 등록 ----------------------------------------------------------------------------------------------------------
+        function insert(){
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    data = this.responseText;
+                    // alert(data);
+
+                    data = JSON.parse(data);
+                    document.getElementById("id").value = document.getElementById("newId").value;
+                    document.getElementById("title").value = data.title;
+                    document.getElementById("release_date").value = data.release_date;
+                    document.getElementById("runtime").value = data.runtime;
+                }
+            };
+            xhttp.open("POST", "insert"); 
+            xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            
+            queryString = "id="+document.getElementById("newId").value
+                         +"&title="+document.getElementById("newTitle").value
+                         +"&release_date="+document.getElementById("newRelease_date").value
+                         +"&runtime="+document.getElementById("newRuntime").value;
+            xhttp.send(queryString);
+        }
+
+        // 2. 영화 모두 보기 ----------------------------------------------------------------------------------------------------------
+        function selectall() {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState === 4 && this.status === 200) {
+                var data = this.responseText;
+                var jsonResponse = JSON.parse(data);
+
+                /*********** 테이블 생성 DOM(Document Object Model) 코드 ***********/
+                var table = document.createElement('table');         // table : 테이블 생성
+                table.setAttribute('id', 'title', 'release_date', 'runtime');
+                var properties = ['id', 'title', 'release_date', 'runtime'];
+                
+                var capitalize = function(s) {
+                    return s.charAt(0).toUpperCase() + s.slice(1);
+                }
+
+                var tr = document.createElement('tr');               // tr : 테이블의 전체 행을 나타냄.
+                for (var i = 0; i < properties.length; i++) {                   
+                    var th = document.createElement('th');           // th : 테이블의 표제 행들만 볼드처리.
+                    th.appendChild(document.createTextNode(capitalize(properties[i])));
+                    tr.appendChild(th);
+                }
+                table.appendChild(tr);
+                
+                // 테이블에 데이터 추가
+                var tr, row;
+                for (var r = 0; r < jsonResponse.length; r++) { 
+                    tr = document.createElement('tr');
+                    row = jsonResponse[r];
+                    for (var i = 0; i < properties.length; i++) {
+                        var td = document.createElement('td');
+                        td.appendChild(document.createTextNode(row[properties[i]]));
+                        tr.appendChild(td);
+                    }
+                    table.appendChild(tr);
+                }
+                
+                /* 테이블 토글 기능
+                 * - DOM 방식으로 테이블 구현을 했더니, 이 코드는 버튼 클릭할때마다 계속 테이블이 생성되었다.
+                 * - 해결방법
+                 *      - 부모 div와 상속받는 자식 div를 만들어서, 생성할때 자식 div를 삭제시키고 재생성하는 방법을 사용했다. 
+                 */
+                let etlTable = document.createElement('div'); //<div></div>
+                let petlTable = document.getElementById('petlTable').appendChild(etlTable);
+                etlTable.setAttribute("id", "etlTable"); //<div id='etlTable'></div>
+                
+                if(document.getElementById('etlTable') != null){
+                    document.getElementById('petlTable').removeChild(document.getElementById('etlTable'));
+                    etlTable.appendChild(table);
+                    document.getElementById('petlTable').appendChild(etlTable);
+                }else{
+                    petlTable.appendChild(table);
+                }
+            }
+        };
+            xhttp.open("get", "selectall");
+            xhttp.send(null);
+        }
+
+        function tableHidden(){
+            let etlTable = document.getElementById('etlTable');
+            if(etlTable != null){
+                document.getElementById('petlTable').removeChild(etlTable);
+            }
+        }
+
+        // 3. 단일 영화 조회 ----------------------------------------------------------------------------------------------------------
+        function select() {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    data = this.responseText;
+                    data = JSON.parse(data);
+                    document.getElementById('selectId').value = data.id;
+                    document.getElementById('selectTitle').value = data.title;
+                    document.getElementById('selectReleasedate').value = data.release_date;
+                    document.getElementById('selectRuntime').value = data.runtime;
+                }
+            };
+            xhttp.open("get", "select?id=" + document.getElementById("sid").value);
+            xhttp.send();
+        }
+        
+        // 4. 영화 업데이트 ----------------------------------------------------------------------------------------------------------
+        function update() {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    data = this.responseText;
+                    data = JSON.parse(data);
+                    document.getElementById('updateId').value = data.id;
+                    document.getElementById('updateTitle').value = data.title;
+                    document.getElementById('updateReleasedate').value = data.release_date;
+                    document.getElementById('updateRuntime').value = data.runtime;
+                }
+            };
+
+            queryString = "update?id=" + document.getElementById("uid").value
+                        + "&title=" + document.getElementById("utitle").value;
+
+            // alert(queryString);
+            xhttp.open("get", queryString);
+                        
+            xhttp.send();
+        }
+        
+        // 5. 영화 삭제 ----------------------------------------------------------------------------------------------------------
+        function deletl() {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    data = this.responseText;
+                    // data = JSON.parse(data);
+                    document.getElementById('id').value = data.id;
+                    document.getElementById('title').value = data.title;
+                    document.getElementById('release_date').value = data.release_date;
+                    document.getElementById('runtime').value = data.runtime;
+                }
+            };
+
+            xhttp.open("POST", "delete");
+                        
+            xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+            xhttp.send("id=" + document.getElementById("did").value);
+        }
+    </script>
+</body>
+</html>
